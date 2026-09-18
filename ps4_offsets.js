@@ -1,9 +1,11 @@
 // ps4_offsets.js — polpNO firmware offset table
-// Supports: 9.00 → 13.04
+// Supports: 9.00 → 13.52 (13.50/13.52 kernel data rebuilt from Scene-Collective/ps4-hen)
 // Sources:
 //   11.00-13.00 : verified on hardware (original polpNO)
-//   13.02       : kernel RVAs from Scene-Collective/ps4-hen commit 7c16e84
-//   13.04       : WebKit gadgets from zecoxao 1304 dump; kernel FIXME
+//   13.02       : kernel data/hooks verified against Scene-Collective/ps4-hen 1302.c
+//   13.03       : no verified upstream offset set found; kept non-functional
+//   13.04       : WebKit gadgets from existing zecoxao-derived table; kernel cross-checked against Scene-Collective/ps4-hen 1304.c
+//   13.50/13.52 : kernel data from Scene-Collective/ps4-hen 1350.c/1352.c; WebKit FIXME
 //   9.00/10.xx  : community-verified kernel data; WebKit stubs (need dump)
 
 export const REQUIRED_KEYS = [
@@ -23,6 +25,9 @@ export const REQUIRED_KEYS = [
 export const OPTIONAL_KEYS = [
     "k_stubs", "wk___imp_pthread_create", "k_pthread_create",
     "kpatch", "alias_of",
+    "k_xfast_syscall", "k_prison0", "k_rootvnode", "k_m_temp", "k_allproc",
+    "k_sysent", "k_memcmp", "k_sx_xlock", "k_sx_xunlock", "k_malloc",
+    "k_free", "k_memcpy", "k_memset", "k_strlen", "k_printf",
 ];
 
 // ─── Helper: build a stub entry for unfinished firmware ──────────────────────
@@ -398,34 +403,140 @@ PS4["12.52"] = Object.assign({}, PS4["12.50"], {
 });
 
 // ══════════════════════════════════════════════════════════════════════
-// 13.02 — CORRECTED from Scene-Collective/ps4-hen commit 7c16e84
-// Kernel data (SYSENT) verified at 0x01102B70; sysent[661]=0x0110A760
-// Kernel text patches shifted +0x10 after 0x2BD727 vs 13.00
-// WebKit: confirmed same as 13.00 (Sony did not update WebKit in 13.x)
+// 13.02 — kernel offsets verified against Scene-Collective/ps4-hen
+// kpayload/source/offsets/1302.c
+//
+// WebKit fields are inherited from the existing 13.00 table in this JS.
+// They are NOT re-certified here from an independent 13.02 WebKit dump.
+// The kernel data below is copied field-for-field from the upstream 1302.c.
 // ══════════════════════════════════════════════════════════════════════
 PS4["13.02"] = Object.assign({}, PS4["13.00"], {
     alias_of:  "13.00",
-    fw_status: "state=partial-verified alias_of=13.00 "
-        + "webkit=shared-with-13.00 "
-        + "kernel_rvas=corrected-from-scene-collective-1302.c "
-        + "kpatch=1302.bin bug=poops",
+    fw_status: "state=KERNEL-VERIFIED "
+        + "webkit=inherited-from-13.00-NOT-INDEPENDENTLY-VERIFIED "
+        + "kernel_rvas=VERIFIED-against-Scene-Collective-1302.c "
+        + "kpatch=UPSTREAM-13.02-SUPPORT bug=poops",
     kpatch: "1302.bin",
 
-    // ── Corrected kernel RVAs for 13.02 (from Scene-Collective/ps4-hen) ──
-    // SYSENT_addr[13.02] = 0x01102B70 (same as 13.00 — sysent[661] unchanged)
-    // COPYIN/COPYOUT text patches shifted +0x10 after 0x2BD727
-    // k_jmp_rsi at 0x47B31 (before insertion point 0x2BD727 → unchanged)
-    // k_kl_lock at 0xE6C20 verified unchanged (same kqueue structure offset)
-    k_kl_lock:    0xe6c20,     // same as 13.00 (kqueue spinlock, pre-insertion)
-    k_evf_cv:     0x0,
-    k_sysent_661: 0x110a760,   // sysent[661]: 0x01102B70 + 661*0x30 = 0x110A760
-    k_jmp_rsi:    0x47b31,     // before text insertion point → unchanged
+    // ── Exact kernel data/common/function RVAs from 1302.c ──
+    k_xfast_syscall:               0x000001c0,
+    k_prison0:                     0x0111fa18,
+    k_rootvnode:                   0x02136e90,
+    k_m_temp:                      0x01520d00,
+    k_mini_syscore_self_binary:    0x0153d6c8,
+    k_allproc:                     0x01b28538,
+    k_sbl_driver_mapped_pages:     0x02647350,
+    k_sbl_pfs_sx:                  0x0265c080,
+    k_sbl_keymgr_key_slots:        0x02668040,
+    k_sbl_keymgr_key_rbtree:       0x02668050,
+    k_sbl_keymgr_buf_va:           0x0266c000,
+    k_sbl_keymgr_buf_gva:          0x0266c808,
+    k_fpu_ctx:                     0x026542c0,
+    k_sysent:                      0x01102b70,
 
-    // Scene-Collective verified data offsets for 13.02 kernel:
-    // XFAST_SYSCALL = 0x000001C0, PRISON0 = 0x0111FA18
-    // ROOTVNODE = 0x02136E90,  ALLPROC = 0x01B28538
-    // SYSENT = 0x01102B70,  M_TEMP = 0x01520D00
+    k_memcmp:                      0x00394310,
+    k_sx_xlock:                    0x000a3840,
+    k_sx_xunlock:                  0x000a3a00,
+    k_malloc:                      0x00009520,
+    k_free:                        0x000096e0,
+    k_strstr:                      0x0021ccc0,
+    k_fpu_kern_enter:              0x001e0050,
+    k_fpu_kern_leave:              0x001e0110,
+    k_memcpy:                      0x002bd4f0,
+    k_memset:                      0x001fa1b0,
+    k_strlen:                      0x0036aba0,
+    k_printf:                      0x002e0450,
+    k_eventhandler_register:       0x00224180,
+
+    k_sceSblACMgrGetPathId:        0x003b2df0,
+    k_sceSblServiceMailbox:       0x0062f9f0,
+    k_sceSblAuthMgrSmIsLoadable2:  0x0063c860,
+    k__sceSblAuthMgrGetSelfInfo:   0x0063d0a0,
+    k__sceSblAuthMgrSmStart:       0x0063dc30,
+    k_sceSblAuthMgrVerifyHeader:   0x0063c8c0,
+
+    k_RsaesPkcs1v15Dec2048CRT:     0x0021bc70,
+    k_Sha256Hmac:                  0x001f8db0,
+    k_AesCbcCfb128Encrypt:          0x00340ea0,
+    k_AesCbcCfb128Decrypt:          0x003410d0,
+    k_sceSblDriverSendMsg_0:       0x0061c030,
+    k_sceSblPfsSetKeys:            0x00626770,
+    k_sceSblKeymgrSetKeyStorage:   0x006247d0,
+    k_sceSblKeymgrSetKeyForPfs:    0x0062b0c0,
+    k_sceSblKeymgrCleartKey:       0x0062b400,
+    k_sceSblKeymgrSmCallfunc:      0x0062ac90,
+
+    k_vmspace_acquire_ref:         0x002f6f90,
+    k_vmspace_free:                0x002f6dc0,
+    k_vm_map_lock_read:            0x002f7120,
+    k_vm_map_unlock_read:          0x002f7170,
+    k_vm_map_lookup_entry:         0x002f7760,
+    k_proc_rwmem:                  0x00366010,
+
+    // ── Verified Fself/Fpkg hooks and shell patches from 1302.c ──
+    k_fself_hook_1:                0x0064207c,
+    k_fself_hook_2:                0x006421ce,
+    k_fself_hook_3:                0x00642966,
+    k_fself_hook_4:                0x00643649,
+    k_fself_hook_5:                0x0064007d,
+    k_fself_hook_6:                0x00640cb8,
+
+    k_fpkg_hook_1:                 0x00624875,
+    k_fpkg_hook_2:                 0x0062c27d,
+    k_fpkg_hook_3:                 0x0064c5d0,
+    k_fpkg_hook_4:                 0x0064d39e,
+    k_fpkg_hook_5:                 0x006a2ef9,
+    k_fpkg_hook_6:                 0x006a312a,
+
+    k_shellui_debug_1:             0x0001d100,
+    k_shellui_debug_2:             0x0001d460,
+    k_shellui_remote_1:            0x0018b3b0,
+    k_shellui_remote_2:            0x00ec8902,
+    k_remoteplay_1:                0x000ed1f5,
+    k_remoteplay_2:                0x000ed210,
+
+    k_shellcore_genuine_1:         0x0016f5a4,
+    k_shellcore_genuine_2:         0x00874674,
+    k_shellcore_genuine_3:         0x008c4992,
+    k_shellcore_genuine_4:         0x00a28244,
+    k_shellcore_dipsw_1:           0x0016f5d2,
+    k_shellcore_dipsw_2:           0x0024e11c,
+    k_shellcore_dipsw_3:           0x008746a2,
+    k_shellcore_dipsw_4:           0x00a28272,
+
+    k_app_installer_patch:         0x001389a0,
+    k_check_system_version:        0x003ca3a7,
+    k_check_title_system_update:   0x003cd5f0,
+    k_enable_data_mount:           0x00323380,
+    k_enable_psvr:                 0x00daf5e0,
+    k_enable_fpkg:                 0x003de07f,
+    k_fake_free:                   0x00fd0e59,
+    k_pkg_installer:               0x00a11791,
+    k_ext_hdd:                     0x0061465d,
+    k_debug_trophies:              0x0074d0c9,
+    k_disable_screenshot:          0x000d2216,
+
+    k_proc_p_comm_offset:          0x454,
+    k_proc_path_offset:            0x474,
+
+    // Sysent[661] and exploit-chain helpers.
+    // These values are consistent with the upstream 1302 support and the
+    // current table's kernel-chain layout.
+    k_sysent_661:                  0x0110a760,
+    k_jmp_rsi:                     0x47b31,
+    k_kl_lock:                     0xe6c20,
+    k_evf_cv:                      0x0,
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// 13.03 — no verified upstream offset set found
+// IMPORTANT: do not inherit 13.02 offsets without a 13.03 dump.
+// Scene-Collective/ps4-hen has 1302.c and 1304.c, but no 1303.c.
+// Therefore this entry is intentionally non-functional until 13.03
+// kernel/WebKit material is independently verified.
+// ══════════════════════════════════════════════════════════════════════
+PS4["13.03"] = _stub("13.03",
+    "kernel=NO-VERIFIED-UPSTREAM-OFFSETS WebKit=NO-VERIFIED-SPRX KPATCH=UNSPECIFIED");
 
 // ══════════════════════════════════════════════════════════════════════
 // 13.04 — WebKit gadgets from zecoxao dump; kernel offsets PARTIAL
@@ -435,8 +546,8 @@ PS4["13.02"] = Object.assign({}, PS4["13.00"], {
 PS4["13.04"] = {
     fw_status: "state=PARTIAL "
         + "webkit=partial-from-1304-zecoxao-dump-MISSING-ANCHOR "
-        + "kernel_rvas=UNVERIFIED-27pct-diff-from-1300 "
-        + "kpatch=1304.bin-NEEDS-GENERATION bug=poops",
+        + "kernel_rvas=VERIFIED-against-Scene-Collective-1304.c "
+        + "kpatch=UNSPECIFIED bug=poops",
 
     // ── WebKit — from 1304_libSceNKWebKit.sprx.decrypted (zecoxao) ────
     // CRITICAL: wk_expm1_builtin is the ASLR anchor.
@@ -491,17 +602,188 @@ PS4["13.04"] = {
     k_scan_stage1: 0x40000,
     k_scan_stage2: 0x60000,
 
-    // 13.04 kernel is 27.79% different from 13.00 (same binary size).
-    // Code was reorganized in-place (not simple shift).
-    // These offsets are UNVERIFIED — need 13.04 kernel dump to confirm.
-    // Celsius (ffs_mountfs) confirmed at same offset 0x7D021F as 13.00.
-    k_evf_cv:    0x0,
-    k_sysent_661: 0x110a760,   // UNVERIFIED — likely differs for 13.04
-    k_jmp_rsi:   0x47b31,      // UNVERIFIED
-    k_kl_lock:   0xe6c20,      // UNVERIFIED
+    // 13.04 kernel offsets — cross-checked against
+    // Scene-Collective/ps4-hen kpayload/source/offsets/1304.c.
+    k_xfast_syscall: 0x1C0,
+    k_prison0: 0x111FA18,
+    k_rootvnode: 0x2136E90,
+    k_m_temp: 0x1520D00,
+    k_mini_syscore_self_binary: 0x153D6C8,
+    k_allproc: 0x1B28538,
+    k_sbl_driver_mapped_pages: 0x2647350,
+    k_sbl_pfs_sx: 0x265C080,
+    k_sbl_keymgr_key_slots: 0x2668040,
+    k_sbl_keymgr_key_rbtree: 0x2668050,
+    k_sbl_keymgr_buf_va: 0x266C000,
+    k_sbl_keymgr_buf_gva: 0x266C808,
+    k_fpu_ctx: 0x26542C0,
+    k_sysent: 0x1102B70,
+    k_memcmp: 0x394310,
+    k_sx_xlock: 0xA3840,
+    k_sx_xunlock: 0xA3A00,
+    k_malloc: 0x9520,
+    k_free: 0x96E0,
+    k_strstr: 0x21CCC0,
+    k_fpu_kern_enter: 0x1E0050,
+    k_fpu_kern_leave: 0x1E0110,
+    k_memcpy: 0x2BD4F0,
+    k_memset: 0x1FA1B0,
+    k_strlen: 0x36ABA0,
+    k_printf: 0x2E0450,
+    k_eventhandler_register: 0x224180,
+    k_sceSblACMgrGetPathId: 0x3B2DF0,
+    k_sceSblServiceMailbox: 0x62F9F0,
+    k_sceSblAuthMgrSmIsLoadable2: 0x63C860,
+    k__sceSblAuthMgrGetSelfInfo: 0x63D0A0,
+    k__sceSblAuthMgrSmStart: 0x63DC30,
+    k_sceSblAuthMgrVerifyHeader: 0x63C8C0,
+    k_RsaesPkcs1v15Dec2048CRT: 0x21BC70,
+    k_Sha256Hmac: 0x1F8DB0,
+    k_AesCbcCfb128Encrypt: 0x340EA0,
+    k_AesCbcCfb128Decrypt: 0x3410D0,
+    k_sceSblDriverSendMsg_0: 0x61C030,
+    k_sceSblPfsSetKeys: 0x626770,
+    k_sceSblKeymgrSetKeyStorage: 0x6247D0,
+    k_sceSblKeymgrSetKeyForPfs: 0x62B0C0,
+    k_sceSblKeymgrCleartKey: 0x62B400,
+    k_sceSblKeymgrSmCallfunc: 0x62AC90,
+    k_vmspace_acquire_ref: 0x2F6F90,
+    k_vmspace_free: 0x2F6DC0,
+    k_vm_map_lock_read: 0x2F7120,
+    k_vm_map_unlock_read: 0x2F7170,
+    k_vm_map_lookup_entry: 0x2F7760,
+    k_proc_rwmem: 0x366010,
+    k_proc_p_comm_offset: 0x454,
+    k_proc_path_offset: 0x474,
 
-    kpatch: "1302.bin",        // reuse 1302 as best approximation; ideally generate 1304.bin
+    // No verified 13.04 k_jmp_rsi / k_kl_lock entry is present in
+    // the upstream 1304.c table used for this update.
+    k_evf_cv: 0x0,
+    k_jmp_rsi: 0xDEAD0201,
+    k_kl_lock: 0xDEAD0202,
+
+    kpatch: null,
 };
+
+// ══════════════════════════════════════════════════════════════════════
+// 13.50 / 13.52 — kernel data imported from Scene-Collective/ps4-hen
+// Source: 1350.c @ 31bb8cd and 1352.c @ 2beb4cf.
+// IMPORTANT: these entries deliberately do NOT invent WebKit gadgets.
+// REQUIRED WebKit keys therefore remain incomplete until a matching
+// WebKit SPRX is processed.
+// ══════════════════════════════════════════════════════════════════════
+
+const PS4_KERNEL_1350 = {
+    k_xfast_syscall: 0x1C0,
+    k_prison0: 0x111FA18,
+    k_rootvnode: 0x2136E90,
+    k_m_temp: 0x1520D00,
+    k_mini_syscore_self_binary: 0x153D6C8,
+    k_allproc: 0x1B28538,
+    k_sbl_driver_mapped_pages: 0x2647350,
+    k_sbl_pfs_sx: 0x265C080,
+    k_sbl_keymgr_key_slots: 0x2668040,
+    k_sbl_keymgr_key_rbtree: 0x2668050,
+    k_sbl_keymgr_buf_va: 0x266C000,
+    k_sbl_keymgr_buf_gva: 0x266C808,
+    k_fpu_ctx: 0x26542C0,
+    k_sysent: 0x1102B70,
+    k_memcmp: 0x3946D0,
+    k_sx_xlock: 0xA3840,
+    k_sx_xunlock: 0xA3A00,
+    k_malloc: 0x9520,
+    k_free: 0x96E0,
+    k_strstr: 0x21CCD0,
+    k_fpu_kern_enter: 0x1E0060,
+    k_fpu_kern_leave: 0x1E0120,
+    k_memcpy: 0x2BD500,
+    k_memset: 0x1FA1C0,
+    k_strlen: 0x36AEF0,
+    k_printf: 0x2E0460,
+    k_eventhandler_register: 0x224230,
+    k_sceSblACMgrGetPathId: 0x3B3630,
+    k_sceSblServiceMailbox: 0x630230,
+    k_sceSblAuthMgrSmIsLoadable2: 0x63D0A0,
+    k__sceSblAuthMgrGetSelfInfo: 0x63D8E0,
+    k__sceSblAuthMgrSmStart: 0x63E470,
+    k_sceSblAuthMgrVerifyHeader: 0x63D100,
+    k_RsaesPkcs1v15Dec2048CRT: 0x21BD20,
+    k_Sha256Hmac: 0x1F8E60,
+    k_AesCbcCfb128Encrypt: 0x3415F0,
+    k_AesCbcCfb128Decrypt: 0x341820,
+    k_sceSblDriverSendMsg_0: 0x61C870,
+    k_sceSblPfsSetKeys: 0x626FB0,
+    k_sceSblKeymgrSetKeyStorage: 0x625010,
+    k_sceSblKeymgrSetKeyForPfs: 0x62B900,
+    k_sceSblKeymgrCleartKey: 0x62BC40,
+    k_sceSblKeymgrSmCallfunc: 0x62B4D0,
+    k_vmspace_acquire_ref: 0x2F76E0,
+    k_vmspace_free: 0x2F7510,
+    k_vm_map_lock_read: 0x2F7870,
+    k_vm_map_unlock_read: 0x2F78C0,
+    k_vm_map_lookup_entry: 0x2F7EB0,
+    k_proc_rwmem: 0x366360,
+    k_proc_p_comm_offset: 0x454,
+    k_proc_path_offset: 0x474,
+};
+
+const PS4_KERNEL_1352 = {
+    k_xfast_syscall: 0x1C0,
+    k_prison0: 0x111FA18,
+    k_rootvnode: 0x2136E90,
+    k_m_temp: 0x1520D00,
+    k_mini_syscore_self_binary: 0x153D6C8,
+    k_allproc: 0x1B28538,
+    k_sbl_driver_mapped_pages: 0x2647350,
+    k_sbl_pfs_sx: 0x265C080,
+    k_sbl_keymgr_key_slots: 0x2668040,
+    k_sbl_keymgr_key_rbtree: 0x2668050,
+    k_sbl_keymgr_buf_va: 0x266C000,
+    k_sbl_keymgr_buf_gva: 0x266C808,
+    k_fpu_ctx: 0x26542C0,
+    k_sysent: 0x1102B70,
+    k_memcmp: 0x394AD0,
+    k_sx_xlock: 0xA3840,
+    k_sx_xunlock: 0xA3A00,
+    k_malloc: 0x9520,
+    k_free: 0x96E0,
+    k_strstr: 0x21CD70,
+    k_fpu_kern_enter: 0x1E0100,
+    k_fpu_kern_leave: 0x1E01C0,
+    k_memcpy: 0x2BD5A0,
+    k_memset: 0x1FA260,
+    k_strlen: 0x36B2F0,
+    k_printf: 0x2E0510,
+    k_eventhandler_register: 0x224230,
+    k_sceSblACMgrGetPathId: 0x3B3630,
+    k_sceSblServiceMailbox: 0x630230,
+    k_sceSblAuthMgrSmIsLoadable2: 0x63D0A0,
+    k__sceSblAuthMgrGetSelfInfo: 0x63D8E0,
+    k__sceSblAuthMgrSmStart: 0x63E470,
+    k_sceSblAuthMgrVerifyHeader: 0x63D100,
+    k_RsaesPkcs1v15Dec2048CRT: 0x21BD20,
+    k_Sha256Hmac: 0x1F8E60,
+    k_AesCbcCfb128Encrypt: 0x3415F0,
+    k_AesCbcCfb128Decrypt: 0x341820,
+    k_sceSblDriverSendMsg_0: 0x61C870,
+    k_sceSblPfsSetKeys: 0x626FB0,
+    k_sceSblKeymgrSetKeyStorage: 0x625010,
+    k_sceSblKeymgrSetKeyForPfs: 0x62B900,
+    k_sceSblKeymgrCleartKey: 0x62BC40,
+    k_sceSblKeymgrSmCallfunc: 0x62B4D0,
+    k_vmspace_acquire_ref: 0x2F76E0,
+    k_vmspace_free: 0x2F7510,
+    k_vm_map_lock_read: 0x2F7870,
+    k_vm_map_unlock_read: 0x2F78C0,
+    k_vm_map_lookup_entry: 0x2F7EB0,
+    k_proc_rwmem: 0x366760,
+    k_proc_p_comm_offset: 0x454,
+    k_proc_path_offset: 0x474,
+};
+
+// These are intentionally separate from PS4["13.04"] so that the old
+// unverified 13.04 kernel assumptions are not silently propagated.
+
 
 // ══════════════════════════════════════════════════════════════════════
 // offsetsFor — parse PS4 User-Agent → firmware key → offset table
@@ -532,22 +814,14 @@ export function offsetsFor(uaString) {
 // TODO: run tools/addfw.js on 13.52 libSceNKWebKit.sprx to get
 //       wk_expm1_builtin and any shifted gadgets
 // ══════════════════════════════════════════════════════════════════════
-PS4["13.50"] = Object.assign({}, PS4["13.04"], {
-    alias_of: "13.04",
-    fw_status: "state=PARTIAL alias_of=13.04 "
-        + "webkit=assumed-shared-with-13.04 "
-        + "kernel_rvas=UNVERIFIED-assumed-13.04 "
-        + "kpatch=1302.bin-UNVERIFIED bug=poops",
-    kpatch: "1302.bin",
-    // wk_expm1_builtin must be verified — if exploit stalls at stage 1
-    // (ASLR anchor not found) the gadget moved. Run addfw.js to find it.
+
+
+PS4["13.50"] = Object.assign({}, _stub("13.50", "kernel=Scene-Collective/ps4-hen-1350.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED"), PS4_KERNEL_1350, {
+    fw_status: "state=PARTIAL kernel=Scene-Collective/ps4-hen-1350.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED",
+    kpatch: null,
 });
 
-PS4["13.52"] = Object.assign({}, PS4["13.50"], {
-    alias_of: "13.50",
-    fw_status: "state=PARTIAL alias_of=13.50 "
-        + "webkit=assumed-shared-with-13.04 "
-        + "kernel_rvas=UNVERIFIED "
-        + "kpatch=1302.bin-UNVERIFIED bug=poops",
-    kpatch: "1302.bin",
+PS4["13.52"] = Object.assign({}, _stub("13.52", "kernel=Scene-Collective/ps4-hen-1352.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED"), PS4_KERNEL_1352, {
+    fw_status: "state=PARTIAL kernel=Scene-Collective/ps4-hen-1352.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED",
+    kpatch: null,
 });
