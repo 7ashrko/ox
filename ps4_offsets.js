@@ -727,6 +727,31 @@ const PS4_KERNEL_1350 = {
     k_proc_path_offset: 0x474,
 };
 
+// Scene-Collective/ps4-hen 2beb4cf: 13.52 kernel patch sites.
+// These are source-verified patch locations; they are metadata only and are
+// intentionally NOT converted into kpatch blobs because this project
+// currently expects a different binary patch format.
+const PS4_KERNEL_PATCHES_1352 = {
+    pmap_protect: 0x00059DF0,
+    pmap_protect_p: 0x00059E37,
+    pmap_store: 0x01B2C3A0,
+    uart_patch: 0x01A47F40,
+    copyin_patch_1: 0x002BD7E7,
+    copyin_patch_2: 0x002BD7F3,
+    copyout_patch_1: 0x002BD6F2,
+    copyout_patch_2: 0x002BD6FE,
+    copyinstr_patch_1: 0x002BDC93,
+    copyinstr_patch_2: 0x002BDC9F,
+    copyinstr_patch_3: 0x002BDCD0,
+    setlogin_patch: 0x003949CC,
+    pfs_signature_check_patch: 0x0069E340,
+    debug_rif_patch_1: 0x0064F460,
+    debug_rif_patch_2: 0x0064F490,
+    debug_settings_error_patch_1: 0x004E8FF8,
+    debug_settings_error_patch_2: 0x004EA0BE,
+    depth_limit_patch: 0x00030F66,
+};
+
 const PS4_KERNEL_1352 = {
     k_xfast_syscall: 0x1C0,
     k_prison0: 0x111FA18,
@@ -806,14 +831,11 @@ export function offsetsFor(uaString) {
     return { key, off };
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// 13.50 / 13.52 — Alias of 13.04 (same major kernel family)
-// WebKit: assumed same as 13.04 until sprx dump confirms otherwise
-// Kernel: likely 13.04-derived; k_sysent_661 / k_jmp_rsi UNVERIFIED
-// kpatch: reusing 1302.bin until 1352 patch sites are extracted
-// TODO: run tools/addfw.js on 13.52 libSceNKWebKit.sprx to get
-//       wk_expm1_builtin and any shifted gadgets
-// ══════════════════════════════════════════════════════════════════════
+// 13.50/13.52 WebKit and kpatch blobs remain intentionally unresolved.
+// 13.52 kernel patch locations are recorded above from Scene-Collective
+// commit 2beb4cf, but are not assigned to kpatch because the local chain
+// expects a separate binary format.
+
 
 
 PS4["13.50"] = Object.assign({}, _stub("13.50", "kernel=Scene-Collective/ps4-hen-1350.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED"), PS4_KERNEL_1350, {
@@ -821,7 +843,8 @@ PS4["13.50"] = Object.assign({}, _stub("13.50", "kernel=Scene-Collective/ps4-hen
     kpatch: null,
 });
 
-PS4["13.52"] = Object.assign({}, _stub("13.52", "kernel=Scene-Collective/ps4-hen-1352.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED"), PS4_KERNEL_1352, {
-    fw_status: "state=PARTIAL kernel=Scene-Collective/ps4-hen-1352.c WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED",
+PS4["13.52"] = Object.assign({}, _stub("13.52", "kernel=Scene-Collective/ps4-hen-1352.c@2beb4cf WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED"), PS4_KERNEL_1352, {
+    fw_status: "state=PARTIAL kernel=Scene-Collective/ps4-hen-1352.c@2beb4cf WebKit=NEEDS-DUMP KPATCH=UNSPECIFIED",
+    kernel_patches: PS4_KERNEL_PATCHES_1352,
     kpatch: null,
 });
